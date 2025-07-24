@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst;net9.0</TargetFrameworks>
-   		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
+		<TargetFrameworks>net8.0-android;net8.0-ios;net8.0-maccatalyst;net8.0;net9.0-android;net9.0-ios;net9.0-maccatalyst;net9.0</TargetFrameworks>
+		<TargetFrameworks>$(TargetFrameworks);net8.0-windows10.0.19041.0;net9.0-windows10.0.19041.0</TargetFrameworks>
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net9.0-tizen</TargetFrameworks> -->
 		<SingleProject>true</SingleProject>
@@ -15,26 +15,44 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
-
 		<!-- NuGet -->
-		<Authors>author</Authors>
-		<Copyright>Copyright © author and contributors</Copyright>
-		<IsPackable>True</IsPackable>
+
+		<!-- Project Identity -->
+		<PackageId>Plugin.Maui.MilestoneTracker</PackageId>
+		<Version>1.0.1</Version>
+		<Title>.NET MAUI MilestoneTracker Plugin</Title>
+
+		<!-- Author & Legal -->
+		<Authors>Ali Raza</Authors>
+		<Company>Syncast Solutions</Company>
+		<Copyright>Copyright © Ali Raza and contributors</Copyright>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+
+		<!-- Description -->
+		<Description>Plugin.Maui.MilestoneTracker provides the ability to track and manage project milestones within your .NET MAUI application.</Description>
+		<PackageTags>dotnet-maui;maui;plugin;milestone;tracker</PackageTags>
+
+		<!-- Repository Info -->
 		<PackageProjectUrl>https://github.com/its-AliRaza/Plugin.Maui.MilestoneTracker</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/its-AliRaza/Plugin.Maui.MilestoneTracker</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
-		<PackageTags>dotnet-maui;maui;plugin;</PackageTags>
-		<IncludeSymbols>True</IncludeSymbols>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
-		<EmbedUntrackedSources>true</EmbedUntrackedSources>
-		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-		<Title>.NET MAUI Feature Plugin</Title>
-		<Description>Plugin.Maui.MilestoneTracker provides the ability to do this amazing thing in your .NET MAUI application.</Description>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<DebugType>portable</DebugType>
+
+		<!-- Package Assets -->
 		<PackageIcon>icon.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+
+		<!-- Symbols & Debugging -->
+		<IncludeSymbols>true</IncludeSymbols>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<DebugType>portable</DebugType>
+
+		<!-- Build -->
+		<IsPackable>true</IsPackable>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
 	</PropertyGroup>
 
 	<!-- iOS & MacCatalyst -->
@@ -68,6 +86,9 @@
 		<Compile Remove="**\*.net.cs" />
 		<None Include="**\*.net.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
 	</ItemGroup>
+	<ItemGroup>
+		<None Remove="silver_medal.svg" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
@@ -77,13 +98,13 @@
 
 	<!-- Package additions -->
 	<ItemGroup>
-		<None Include="..\..\nuget.png" PackagePath="icon.png" Pack="true" />
+		<None Include="icon.png"  Pack="true" PackagePath=""/>
 		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 	<ItemGroup>
-	  <MauiXaml Update="Journey\MilestoneTracker.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
+		<MauiXaml Update="Journey\MilestoneTracker.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
 	</ItemGroup>
 
 </Project>

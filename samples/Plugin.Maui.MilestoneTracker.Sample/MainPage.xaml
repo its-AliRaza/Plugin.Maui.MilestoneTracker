@@ -8,7 +8,7 @@
         <Border Padding="40">
             <controls:MilestoneTracker  
         Grid.Row="0"
-                AnimationSpeed="Normal"
+        AnimationSpeed="Normal"
         x:Name="MilestoneTracker"  />
         </Border>
 

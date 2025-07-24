@@ -26,6 +26,20 @@ public partial class MilestoneTracker : AbsoluteLayout
 
     #region BindableProperties
 
+    public static readonly BindableProperty StartAnimationProperty =
+       BindableProperty.Create(
+           nameof(StartAnimation),
+           typeof(bool),
+           typeof(MilestoneTracker),
+           false,
+           propertyChanged: OnStartAnimationChanged);
+
+    public bool StartAnimation
+    {
+        get => (bool)GetValue(StartAnimationProperty);
+        set => SetValue(StartAnimationProperty, value);
+    }
+
     public static readonly BindableProperty MilestonesProperty = BindableProperty.Create(
       propertyName: nameof(Milestones),
       returnType: typeof(ObservableCollection<Milestone>),
@@ -66,13 +80,28 @@ public partial class MilestoneTracker : AbsoluteLayout
 
     #region Methods
 
-    public void InitializeMilestones()
+    private void InitializeMilestones()
     {
         // Restart animation
         pathAnimationTimer.Reset();
         _isAnimationComplete = false;
         animationProgress = 0;
         RoadCanvas.InvalidateSurface(); // Triggers drawing
+    }
+
+    private static void OnStartAnimationChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is MilestoneTracker view &&
+        newValue is bool shouldStart &&
+        shouldStart &&
+        oldValue is bool wasStarted &&
+        !wasStarted) // Trigger only on false → true
+        {
+            view.InitializeMilestones();
+
+            // Reset to allow future triggers
+            view.StartAnimation = false;
+        }
     }
 
     private bool _isAnimationComplete = false;
