@@ -51,4 +51,8 @@
 	  <ProjectReference Include="..\..\src\Plugin.Maui.MilestoneTracker\Plugin.Maui.MilestoneTracker.csproj" />
 	  <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Resources\Images\" />
+	</ItemGroup>
 </Project>

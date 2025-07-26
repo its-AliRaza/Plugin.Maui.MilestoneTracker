@@ -2,17 +2,45 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"  
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"  
              xmlns:controls="clr-namespace:Plugin.Maui.MilestoneTracker.Journey;assembly=Plugin.Maui.MilestoneTracker"
-             x:Class="Plugin.Maui.MilestoneTracker.Sample.MainPage"  
-             Title="Feature Plugin">
-    <StackLayout>
-        <Border Padding="40">
-            <controls:MilestoneTracker  
-        Grid.Row="0"
-        AnimationSpeed="Normal"
-        x:Name="MilestoneTracker"  />
-        </Border>
+             x:Class="Plugin.Maui.MilestoneTracker.Sample.MainPage"
+             BackgroundColor="White"
+             Title="Plugin.Maui.MilestoneTracker">
+    <ScrollView>
+        <VerticalStackLayout Padding="10" Spacing="10">
+            <Border
+Grid.Row="0"
+StrokeThickness="1"
+Stroke="#3A512BD4"
+Padding="10"
+StrokeShape="RoundRectangle 7,7,7,7"   
+VerticalOptions="Center">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#1A512BD4" Offset="0.0" />
+                        <!-- 0.1 opacity -->
+                        <GradientStop Color="#fbfcfc" Offset="1.0" />
+                        <!-- 0.1 opacity -->
+                    </LinearGradientBrush>
+                </Border.Background>
 
-        <Button Text="Abcd" Clicked="Button_Clicked"/>
-    </StackLayout>
-    <!-- Add something that makes sense for your plugin here -->
+                <Grid RowDefinitions="Auto,200" ColumnDefinitions="Auto,*">
+                    <Label Grid.Row="0" Grid.Column="0" Text="Wave" FontAttributes="Bold" FontSize="Large" Margin="10,10,10,0"/>
+                    <Border  Grid.Row="0" Grid.Column="1" StrokeShape="RoundRectangle 25,25,25,25" StrokeThickness="1" Stroke="White" BackgroundColor="{StaticResource Primary}"
+            Padding="10,5" Margin="10,10,10,0" HorizontalOptions="End" VerticalOptions="Center">
+                        <Label Text="20% Complete" Style="{StaticResource MicroSemibold}" TextColor="White"/>
+                    </Border>
+
+                    <controls:MilestoneTracker  
+    Grid.Row="1"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="2"
+    AnimationSpeed="Normal"
+    PathColor="{StaticResource Primary}"
+    PathType="Wave"
+    x:Name="MilestoneTracker"/>
+                </Grid>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+
 </ContentPage>
