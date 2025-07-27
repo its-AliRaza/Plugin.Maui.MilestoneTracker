@@ -36,7 +36,7 @@ VerticalOptions="Center">
                     Grid.ColumnSpan="2"
     AnimationSpeed="Normal"
     PathColor="{StaticResource Primary}"
-    PathType="Wave"
+    PathType="DiagonalWave"
     x:Name="MilestoneTracker"/>
                 </Grid>
             </Border>

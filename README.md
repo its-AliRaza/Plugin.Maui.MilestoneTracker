@@ -87,13 +87,13 @@ PathType =
 ```
 protected override async void OnAppearing()
 {
-    MilestoneTracker.Milestones = Milestones;
-    MilestoneTracker.StartAnimation = true;
+    milestoneView.Milestones = Milestones;
+    milestoneView.StartAnimation = true;
 }
 
 private void Button_Clicked(object sender, EventArgs e)
 {
-    Milestones[3].IsCompleted = true;
+    milestoneView[3].IsCompleted = true;
 }
 
  ```
@@ -123,8 +123,6 @@ public ObservableCollection<Milestone> Milestones { get; set; } = new()
 - Horizontal scrollable milestones
 
 - Milestone click events (e.g., show detail on tap)
-
-- Custom path shapes (curves, waves, etc.)
 
 - Dark mode support
 

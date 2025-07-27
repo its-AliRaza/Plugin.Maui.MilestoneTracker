@@ -129,7 +129,6 @@ public partial class MilestoneTracker : AbsoluteLayout
         RoadCanvas.InvalidateSurface();
     }
 
-
     private static void OnStartAnimationChanged(BindableObject bindable, object oldValue, object newValue)
     {
         if (bindable is not MilestoneTracker view) return;
@@ -148,9 +147,13 @@ public partial class MilestoneTracker : AbsoluteLayout
         int width = e.Info.Width;
         int height = e.Info.Height;
 
+#if IOS || MACCATALYST
+        DrawPathOnIOS(canvas, width, height);
+#elif ANDROID || WINDOWS
         UpdateAnimationProgress();
         DrawAnimatedPath(canvas, width, height);
         HandleAnimationCompletion(sender, width, height);
+#endif
     }
 
     private void UpdateAnimationProgress()
@@ -278,6 +281,111 @@ public partial class MilestoneTracker : AbsoluteLayout
         };
 
         canvas.DrawPath(_cachedPath, paint);
+    }
+
+    private void DrawPathOnIOS(SKCanvas canvas, int width, int height)
+    {
+
+        _cachedPath?.Dispose();
+        _cachedPath = new SKPath();
+        _pathPoints.Clear();
+
+        using var pathPaint = new SKPaint
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 6,
+            Color = PathColor.ToSKColor(),
+            IsAntialias = true,
+            StrokeCap = SKStrokeCap.Round
+        };
+
+
+        switch (PathType)
+        {
+            case MilestonePathType.Horizontal:
+                _cachedPath.MoveTo(0, height / 2f);
+                for (float x = 0; x <= width; x += 10)
+                {
+                    _cachedPath.LineTo(x, height / 2f);
+                    _pathPoints.Add((x, height / 2f));
+                }
+                break;
+
+            case MilestonePathType.Wave:
+                _cachedPath.MoveTo(0, height / 2f);
+                for (float x = 0; x <= width; x += 10)
+                {
+                    float y = (float)(height / 2 + Math.Sin(x * 0.01) * 50);
+                    _cachedPath.LineTo(x, y);
+                    _pathPoints.Add((x, y));
+                }
+                break;
+
+            case MilestonePathType.Diagonal:
+                _cachedPath.MoveTo(0, height);
+                for (float t = 0; t <= 1f; t += 0.01f)
+                {
+                    float x = width * t;
+                    float y = height - (height * t);
+                    _cachedPath.LineTo(x, y);
+                    _pathPoints.Add((x, y));
+                }
+                break;
+
+            case MilestonePathType.DiagonalWave:
+                _cachedPath.MoveTo(-width * 0.05f, height * 0.9f);
+                float waveAmplitude = height * 0.1f;
+                float waveFrequency = 3.5f;
+                float Dpadding = 0.05f;
+                float effectiveWidth = width * (1 + 2 * Dpadding);
+
+                for (float t = 0; t <= 1f; t += 0.01f)
+                {
+                    float x = -width * Dpadding + (effectiveWidth * t);
+                    float baseY = height * 0.9f - (height * 0.8f * t);
+
+                    float wave = waveAmplitude * (float)Math.Sin(t * Math.PI * 2 * waveFrequency);
+                    wave *= (float)(Math.Sin(t * Math.PI));
+
+                    float y = Math.Max(height * 0.1f, Math.Min(height * 0.9f, baseY + wave));
+
+                    if (x >= -width * 0.05f && x <= width * 1.05f)
+                    {
+                        _cachedPath.LineTo(x, y);
+                        _pathPoints.Add((x, y));
+                    }
+                }
+
+                _cachedPath.LineTo(width * 1.05f, height * 0.1f);
+                _pathPoints.Add((width * 1.05f, height * 0.1f));
+                break;
+
+            case MilestonePathType.ZigZag:
+                _cachedPath.MoveTo(0, height / 2f);
+                float zAmplitude = 40f;
+                float period = 60f;
+                for (float x = 0; x <= width; x += 10)
+                {
+                    float y = (float)(height / 2 + zAmplitude * Math.Sign(Math.Sin(x / period)));
+                    _cachedPath.LineTo(x, y);
+                    _pathPoints.Add((x, y));
+                }
+                break;
+        }
+
+        // Always draw the cached path
+        using var paint = new SKPaint
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 6,
+            Color = PathColor.ToSKColor(),
+            IsAntialias = true,
+            StrokeCap = SKStrokeCap.Round
+        };
+
+        canvas.DrawPath(_cachedPath, paint);
+        if (_milestoneImageMap.Count == 0)
+            PlaceMilestoneImages(width, height);
     }
     private void HandleAnimationCompletion(object sender, int width, int height)
     {
@@ -409,7 +517,7 @@ public partial class MilestoneTracker : AbsoluteLayout
     }
 
 
-    #endregion
+#endregion
 
     #region Public Methods
 
