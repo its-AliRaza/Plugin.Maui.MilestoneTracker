@@ -67,8 +67,7 @@ Or via Visual Studio NuGet UI:
         PathType="Wave" 
         StartAnimation="{Binding StartAnimation}"
         Milestones="{Binding Milestones}"
-        Grid.Row="1"
-        Grid.ColumnSpan="2"
+        IndicatorImage="anyimg" // Animated indicator image - Optional
         x:Name="milestoneView"
         PathColor="{StaticResource Primary}"
         HeightRequest="150" />

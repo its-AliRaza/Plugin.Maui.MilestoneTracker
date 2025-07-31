@@ -1,4 +1,5 @@
-﻿using Microsoft.Maui.Layouts;
+﻿using Microsoft.Maui.Controls.Shapes;
+using Microsoft.Maui.Layouts;
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
@@ -114,6 +115,21 @@ public partial class MilestoneTracker : AbsoluteLayout
     {
         get => (Color)GetValue(PathColorProperty);
         set => SetValue(PathColorProperty, value);
+    }
+
+    /// <summary>
+    /// Show between the completed and coming milstone.
+    /// </summary>
+    public static readonly BindableProperty IndicatorImageProperty = BindableProperty.Create(
+        propertyName: nameof(IndicatorImage),
+        returnType: typeof(string),
+        declaringType: typeof(MilestoneTracker),
+        defaultValue: "");
+
+    public string IndicatorImage
+    {
+        get => (string)GetValue(IndicatorImageProperty);
+        set => SetValue(IndicatorImageProperty, value);
     }
 
 
@@ -408,28 +424,111 @@ public partial class MilestoneTracker : AbsoluteLayout
 
     private async Task PlaceMilestoneImages(int canvasWidth, int canvasHeight)
     {
-        UnsubscribeAllMilestoneEvents();
-
-        if (Milestones.Count == 0) return;
-
-        float dipPadding = 25f;
-        float density = (float)DeviceDisplay.MainDisplayInfo.Density;
-        float pixelPadding = dipPadding * density;
-        float drawableWidth = canvasWidth - 2 * pixelPadding;
-
-        var animationTasks = new List<Task>();
-
-        for (int i = 0; i < Milestones.Count; i++)
+        try
         {
-            float progress = Milestones.Count > 1 ? (float)i / (Milestones.Count - 1) : 0.5f;
-            float x = pixelPadding + drawableWidth * progress;
-            var closest = GetClosestPathPoint(x);
-            double dipX = closest.x / density;
-            double dipY = closest.y / density;
+            UnsubscribeAllMilestoneEvents();
 
-            var milestone = Milestones[i];
-            var image = CreateMilestoneImage(milestone);
+            if (canvasWidth <= 0 || canvasHeight <= 0)
+            {
+                System.Diagnostics.Debug.WriteLine("Invalid canvas dimensions");
+                return;
+            }
 
+            if (Milestones?.Count == 0)
+            {
+                System.Diagnostics.Debug.WriteLine("No milestones to place");
+                return;
+            }
+
+            float dipPadding = 25f;
+            float density = (float)DeviceDisplay.MainDisplayInfo.Density;
+            if (density <= 0)
+            {
+                System.Diagnostics.Debug.WriteLine("Invalid display density");
+                density = 1f; // Fallback to 1:1 ratio
+            }
+
+            float pixelPadding = dipPadding * density;
+            float drawableWidth = Math.Max(0, canvasWidth - 2 * pixelPadding);
+
+            var animationTasks = new List<Task>();
+            int lastCompletedIndex = GetLastCompletedMilestoneIndex();
+
+            // Place all milestone images with error handling
+            for (int i = 0; i < Milestones.Count; i++)
+            {
+                try
+                {
+                    await PlaceSingleMilestone(i, lastCompletedIndex, pixelPadding, drawableWidth, density, canvasWidth, canvasHeight, animationTasks);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error placing milestone {i}: {ex.Message}");
+                    continue; // Skip problematic milestone but continue with others
+                }
+            }
+
+            try
+            {
+                await Task.WhenAll(animationTasks);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error during milestone animations: {ex.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Critical error in PlaceMilestoneImages: {ex.Message}");
+        }
+    }
+
+    private int GetLastCompletedMilestoneIndex()
+    {
+        for (int i = Milestones.Count - 1; i >= 0; i--)
+        {
+            if (Milestones[i]?.IsCompleted == true)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private async Task PlaceSingleMilestone(
+        int index,
+        int lastCompletedIndex,
+        float pixelPadding,
+        float drawableWidth,
+        float density,
+        int canvasWidth,
+        int canvasHeight,
+        List<Task> animationTasks)
+    {
+        var milestone = Milestones[index];
+        if (milestone == null)
+        {
+            System.Diagnostics.Debug.WriteLine($"Null milestone at index {index}");
+            return;
+        }
+
+        float progress = Milestones.Count > 1 ? (float)index / (Milestones.Count - 1) : 0.5f;
+        float x = pixelPadding + drawableWidth * progress;
+
+        var closest = GetClosestPathPoint(x, canvasWidth, canvasHeight);
+        double dipX = closest.x / density;
+        double dipY = closest.y / density;
+
+        var image = CreateMilestoneImage(milestone);
+        if (image == null)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to create image for milestone {index}");
+            return;
+        }
+
+        try
+        {
+            // Place milestone image
             AbsoluteLayout.SetLayoutBounds(image, new Rect(dipX - 16, dipY - 16, 32, 32));
             AbsoluteLayout.SetLayoutFlags(image, AbsoluteLayoutFlags.None);
             RootLayout.Children.Add(image);
@@ -437,12 +536,121 @@ public partial class MilestoneTracker : AbsoluteLayout
             _milestoneImageMap[milestone] = image;
             milestone.PropertyChanged += OnMilestoneChanged;
 
+            // Add animations to task list
             await Task.Delay(100);
             animationTasks.Add(image.FadeTo(1, 300, Easing.CubicIn));
             animationTasks.Add(image.ScaleTo(1, 300, Easing.BounceOut));
+
+            // Handle progress indicator if needed
+            if (index == lastCompletedIndex && index < Milestones.Count - 1 && !string.IsNullOrEmpty(IndicatorImage))
+            {
+                await PlaceProgressIndicator(index, pixelPadding, drawableWidth, density, progress, canvasWidth, canvasHeight, animationTasks);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error setting up milestone {index}: {ex.Message}");
+            // Cleanup if partial setup occurred
+            if (image != null && RootLayout.Children.Contains(image))
+            {
+                RootLayout.Children.Remove(image);
+            }
+            if (_milestoneImageMap.ContainsKey(milestone))
+            {
+                _milestoneImageMap.Remove(milestone);
+            }
+            milestone.PropertyChanged -= OnMilestoneChanged;
+        }
+    }
+
+    private async Task PlaceProgressIndicator(
+    int currentIndex,
+    float pixelPadding,
+    float drawableWidth,
+    float density,
+    float progress,
+    int canvasWidth,
+    int canvasHeight,
+    List<Task> animationTasks)
+    {
+        try
+        {
+            float nextProgress = (float)(currentIndex + 1) / (Milestones.Count - 1);
+            float progressX = pixelPadding + drawableWidth * ((progress + nextProgress) / 2);
+            var progressPoint = GetClosestPathPoint(progressX, canvasWidth, canvasHeight);
+
+            //var progressIndicator = new Image
+            //{
+            //    Source = IndicatorImage,
+            //    WidthRequest = 37,
+            //    HeightRequest = 37,
+            //    VerticalOptions = LayoutOptions.Center,
+            //    HorizontalOptions = LayoutOptions.Center,
+            //    Opacity = 0,
+            //    Scale = 0.5
+            //};
+
+            var progressIndicator = new Border
+            {
+                StrokeShape = new RoundRectangle { CornerRadius = 14 },
+                Stroke = Colors.Transparent,
+                Background = new SolidColorBrush(Colors.White),
+                WidthRequest = 28,
+                HeightRequest = 28,
+                Padding = 0,
+                Content = new Microsoft.Maui.Controls.Image
+                {
+                    Source = IndicatorImage,
+                    Aspect = Aspect.AspectFill
+                },
+                Clip = new EllipseGeometry { Center = new Point(14, 14), RadiusX = 14, RadiusY = 14 },
+                Shadow = new Shadow
+                {
+                    Brush = Brush.Black,
+                    Offset = new Point(2, 6),
+                    Radius = 8,
+                    Opacity = 0.35f
+                }
+            };
+
+
+
+
+            AbsoluteLayout.SetLayoutBounds(progressIndicator,
+                new Rect(progressPoint.x / density - 18.5, progressPoint.y / density - 18.5, 37, 37));
+            AbsoluteLayout.SetLayoutFlags(progressIndicator, AbsoluteLayoutFlags.None);
+            RootLayout.Children.Add(progressIndicator);
+
+            animationTasks.Add(progressIndicator.FadeTo(1, 300, Easing.CubicIn));
+            animationTasks.Add(progressIndicator.ScaleTo(1, 300, Easing.BounceOut));
+
+            StartProgressIndicatorAnimation(progressIndicator);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error placing progress indicator: {ex.Message}");
+        }
+    }
+
+    private void StartProgressIndicatorAnimation(Border progressIndicator)
+    {
+        async void AnimateProgressIndicator()
+        {
+            try
+            {
+                while (progressIndicator != null && progressIndicator.Parent != null)
+                {
+                    await progressIndicator.TranslateTo(0, -10, 1000, Easing.SinInOut);
+                    await progressIndicator.TranslateTo(0, 0, 1000, Easing.SinInOut);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in progress indicator animation: {ex.Message}");
+            }
         }
 
-        await Task.WhenAll(animationTasks);
+        MainThread.BeginInvokeOnMainThread(AnimateProgressIndicator);
     }
 
     private static Image CreateMilestoneImage(Milestone milestone)
@@ -459,23 +667,40 @@ public partial class MilestoneTracker : AbsoluteLayout
         };
     }
 
-    private (float x, float y) GetClosestPathPoint(float targetX)
+    private (float x, float y) GetClosestPathPoint(float targetX, int canvasWidth, int canvasHeight)
     {
-        // Original logic for other path types
-        (float x, float y) closest = _pathPoints[0];
-        float minDist = Math.Abs(closest.x - targetX);
-
-        foreach (var point in _pathPoints)
+        try
         {
-            float dist = Math.Abs(point.x - targetX);
-            if (dist < minDist)
+            if (_pathPoints.Count == 0)
             {
-                minDist = dist;
-                closest = point;
+                System.Diagnostics.Debug.WriteLine("Warning: No path points available for milestone placement");
+                return (targetX, canvasHeight / 2f); // Fallback to horizontal center
             }
-        }
 
-        return closest;
+            (float x, float y) closest = _pathPoints[0];
+            float minDist = Math.Abs(closest.x - targetX);
+
+            foreach (var point in _pathPoints)
+            {
+                float dist = Math.Abs(point.x - targetX);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    closest = point;
+                }
+            }
+
+            // Ensure point is within canvas bounds with safety margins
+            closest.x = Math.Max(0, Math.Min(closest.x, canvasWidth));
+            closest.y = Math.Max(0, Math.Min(closest.y, canvasHeight));
+
+            return closest;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in GetClosestPathPoint: {ex.Message}");
+            return (Math.Max(0, Math.Min(targetX, canvasWidth)), canvasHeight / 2f);
+        }
     }
 
     private void UnsubscribeAllMilestoneEvents()
@@ -517,7 +742,7 @@ public partial class MilestoneTracker : AbsoluteLayout
     }
 
 
-#endregion
+    #endregion
 
     #region Public Methods
 

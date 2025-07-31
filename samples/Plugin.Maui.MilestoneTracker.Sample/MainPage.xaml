@@ -31,13 +31,14 @@ VerticalOptions="Center">
                     </Border>
 
                     <controls:MilestoneTracker  
-    Grid.Row="1"
+                    Grid.Row="1"
                     Grid.Column="0"
                     Grid.ColumnSpan="2"
-    AnimationSpeed="Normal"
-    PathColor="{StaticResource Primary}"
-    PathType="DiagonalWave"
-    x:Name="MilestoneTracker"/>
+                    IndicatorImage="anyimg"
+                    AnimationSpeed="Normal"
+                    PathColor="{StaticResource Primary}"
+                    PathType="DiagonalWave"
+                    x:Name="MilestoneTracker"/>
                 </Grid>
             </Border>
         </VerticalStackLayout>
